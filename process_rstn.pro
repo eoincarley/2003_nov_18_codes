@@ -16,10 +16,12 @@ pro process_rstn
 	data = result.field1
 	times = dblarr(n_elements(data))
 
-	stop_index = n_elements(data)-1
+	stop_index = n_elements(times)-1
 	print, 'Processing '+rstnfile
+
 	for i=0, stop_index do begin
-		times[i] = anytim(file2time(strmid((data)[i], 4,14)), /utim)
+		timstr = strmid((data)[0], 4, 8) + '_' + strmid((data)[i], 12, 6)
+		times[i] = anytim(file2time(timstr), /utim)
 		progress_percent, i, 0, stop_index
 	endfor	
 

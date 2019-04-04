@@ -34,21 +34,24 @@ pro plot_rstn_flux_spectrum, t0, t1, eps_name, postscript=postscript
 	; Set up the position coords of each time series. Single column.
 
 	set_line_color
-	output_path='/Users/eoincarley/Data/2003_nov_18/'
+	t0 = anytim(t0, /utim)
+	t1 = anytim(t1, /utim)
+	output_path = '~/Data/2003_nov_18/'
+	file = output_path+'RSTN/RSTN_flux_time_20031118.sav'
+	restore, file
+	times = rstn_struct.times
+	timsec = times - times[0]
+	xrange = [t0, t1]
+	yrange = [1e1, 1e5]
+	data = [transpose(rstn_struct.flux_245), $
+			transpose(rstn_struct.flux_410), $
+			transpose(rstn_struct.flux_610), $
+			transpose(rstn_struct.flux_1415), $
+			transpose(rstn_struct.flux_2695), $
+			transpose(rstn_struct.flux_4995), $
+			transpose(rstn_struct.flux_8800), $
+			transpose(rstn_struct.flux_15499) ]
 
-	file = '~/Data/2003_nov_18/RSTN/18NOV03.LIS'
-	time_base = anytim('2003-11-18T07:30:00', /utim)
-	t0=anytim(t0, /utim)
-	t1=anytim(t1, /utim)
-	xrange=[t0,t1]
-	
-	result = read_ascii(file, data_start=6394)
-	data = result.field1
-	dshape = size(data)
-	nseconds = dshape[2]
-	nfreqs = dshape[1]
-	times = time_base + findgen(nseconds)
-	data = data[1:8, *]
 	for i=0, 7 do data[i,*] = data[i,*] - mean(data[i,-300:-1], /nan)
 	tindices = where(times ge t0 and times le t1)
 	data = data[*, tindices]
@@ -56,7 +59,7 @@ pro plot_rstn_flux_spectrum, t0, t1, eps_name, postscript=postscript
 	freqs = float(freqs_str)
 
 	if keyword_set(postscript) then begin	
-		setup_ps, output_path + eps_name
+		setup_ps, output_path + 'figures/' + eps_name
 	endif else begin
 		loadct, 0
 		!p.background=100

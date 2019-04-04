@@ -37,10 +37,10 @@ pro process_phoenix_pol
 	freq = freq[pol_channels]
 
 
-	indices = [2, 12, 18, 23] ; 2620, 1480, 408 MHz
+	indices = [0, 12, 18, 23] ; 2620, 1480, 408 MHz
 	data_pol = data_pol[*, indices]
 	freq = freq[indices]
-	corrections = [30, 10, 26, 5]
+	corrections = [60, 10, 26, 5]
 
 	loadct, 74
 	for i=0, n_elements(freq)-1 do begin

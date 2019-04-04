@@ -8,7 +8,7 @@ pro setup_ps, name
           /helvetica, $
           /inches, $
           xsize=9, $
-          ysize=13, $
+          ysize=10, $
           /encapsulate, $
           yoffset=5, $
           bits_per_pixel = 16
@@ -48,33 +48,28 @@ pro plot_rstn_phoenix_IV, postscript=postscript
 	set_line_color
 	output_path='~/Data/2003_nov_18/'
 	phnx_path = '~/Data/2003_nov_18/phoenix/'
-	rstnfile = '~/Data/2003_nov_18/RSTN/18NOV03.LIS'
+	rstnfile = '~/Data/2003_nov_18/RSTN/RSTN_flux_time_20031118.sav'
 	pos0 = [0.15, 0.52, 0.95, 0.9]
-	pos1 = [0.15, 0.12, 0.95, 0.5]
+	pos1 = [0.15, 0.13, 0.95, 0.51]
 	t0 = anytim('2003-11-18T08:00:00', /utim) ; For data extraction. Related to data_start index.
 	t1 = anytim('2003-11-18T09:00:00', /utim)
-	
-	time_base = anytim('2003-11-18T07:30:00', /utim)
-	result = read_ascii(rstnfile, data_start=6393)
-	data = result.field1
-	dshape = size(data)
-	nseconds = dshape[2]
-	nfreqs = dshape[1]
-	times = time_base + dindgen(nseconds)
-	tindices = where(times ge t0 and times le t1)
+	xrange = [t0,t1]
 
-	times = times[tindices]
+	restore, rstnfile
+	times = rstn_struct.times
 	timsec = times - times[0]
-	flux_410 = data[2, tindices]  ;- data[2, -1] 
-	flux_1415 = data[4, tindices] ;- data[4, -1]
-	flux_2695 = data[5, tindices] ;- data[5, -1]
+	flux_410 = rstn_struct.flux_410
+	flux_1415 = rstn_struct.flux_1415
+	flux_2695 = rstn_struct.flux_2695
+	flux_4995 = rstn_struct.flux_4995
+
 	
 	;-----------------------------;
 	;
 	;	 Plot RSTN intensity
 	;	
 	if keyword_set(postscript) then begin	
-		setup_ps, output_path+'rstn_phoenix_flux_20031118.eps'
+		setup_ps, output_path+'figures/rstn_phoenix_IV_20031118.eps'
 	endif else begin
 		loadct, 0
 		!p.background=100
@@ -83,76 +78,91 @@ pro plot_rstn_phoenix_IV, postscript=postscript
 		set_line_color
 	endelse	
 
-	flux_1415 = alog10(flux_1415)
-	utplot, timsec, flux_1415/max(flux_1415), t0, color=3, $
-		ytitle='Flux (SFU)', $
+	utplot, timsec, flux_410, times[0], color=0, $
+		ytitle = 'Flux (SFU)', $
 		/xs, /ys, $
 		/normal, $
 		/noerase, $
 		timerange = [t0, t1], $
 		xticklen = 1.0, xgridstyle = 1.0, $
-		thick=4, $
-		;yrange=[10, 2e4], $
-		;/ylog, $
-		position=pos0;, $
-		;xtickformat='(A1)', $
-		;xtitle=' '
+		thick = 4, $
+		yrange = [10, 2e4], $
+		/ylog, $
+		position = pos0, $
+		xtickformat = '(A1)', $
+		xtitle=' '
 
-	;outplot, times, flux_1415, color=5
-	;outplot, times, flux_2695, color=6
+	outplot, timsec, flux_410, times[0], color=4, thick = 3
+	outplot, timsec, flux_1415, times[0], color=5, thick = 4
+	outplot, timsec, flux_2695, times[0], color=6, thick = 4
+	outplot, timsec, flux_4995, times[0], color=8, thick = 4
 
-	stop
+	legend, ['RSTN 410 MHz', '1415 MHz', '2695 MHz', '4995 MHz'], $
+		colors = [4, 5, 6, 8], $
+		linestyle = [0, 0, 0, 0], $
+		box=0, $
+		/top, /right
+
 	;-------------------------------;
 	;
 	;	 Plot Phoenix Stokes I
 	;	
-	files = findfile('~/Data/2003_nov_18/phoenix/PHOENIX*i.fit.gz')
-	output_path='/Users/eoincarley/Data/2003_nov_18/'
+	;files = findfile('~/Data/2003_nov_18/phoenix/PHOENIX*i.fit.gz')
+	;output_path='/Users/eoincarley/Data/2003_nov_18/'
 
-	for i=0, n_elements(files)-1 do begin
-		radio_spectro_fits_read, files[i], data, time, freq, main_hea=hdr
+	;for i=0, n_elements(files)-1 do begin
+	;	radio_spectro_fits_read, files[i], data, time, freq, main_hea=hdr
+	;
+	;	if i eq 0 then begin
+	;		data_total = data 
+	;		times = time
+	;	endif else begin
+	;		data_total = [data_total, data]
+	;		times = [times, time]
+	;	endelse	
+	;
+	;endfor	
 
-		if i eq 0 then begin
-			data_total = data 
-			times = time
-		endif else begin
-			data_total = [data_total, data]
-			times = [times, time]
-		endelse	
-
-	endfor	
-
-	phnx_1400 = data_total[*, (where(freq gt 1400))[-1]]
-	phnx_1400 = phnx_1400/max(phnx_1400) - 0.3
-	timsec = times - times[0]
-	outplot, timsec - 2.0*60.0, phnx_1400, times[0]
+	;phnx_1400 = data_total[*, (where(freq gt 1400))[-1]]
+	;phnx_1400 = 10.0^(phnx_1400/45.0) - 10.0
+	;timsec = times - times[0]
+	;outplot, timsec, phnx_1400, times[0]
 		
-	STOP
 	;-------------------------------;
 	;
 	;	 Plot Phoenix Stokes V
 	;	
-
 	restore, phnx_path+'PHOENIX_2003118_V_processed.sav'
-	cols = [0, 6, 5, 3]
-	for i=1, n_elements(freq)-1 do begin
+	timsec = times - times[0]
+	cols = [8, 6, 5, 4]
+	for i=0, n_elements(freq)-1 do begin
 		flux = smooth(data_pol[*, i], 15) + corrections[i]
-		if i eq 1 then begin
-			utplot, times, flux, t0, $
-				color=cols[i], $
+		if i eq 0 then begin
+			utplot, timsec, flux, times[0], $
+				color=0, $
 				/xs, /ys, $
-				xrange=[t0,t1], $
-				position=pos1, $
+				timerange = [t0, t1], $
+				position = pos1, $
 				yr = [-100, 100], $
+				ytitle = 'Stokes V (%)', $
+				xtitle = 'Time (UT)', $
 				xticklen = 1.0, xgridstyle = 1.0, $
-				/noerase
+				/noerase, $
+				thick=3
+
+			outplot, timsec, flux, times[0], color=cols[i], thick=2
 		endif else begin
-			outplot, times, flux, color=cols[i]
+			outplot, timsec, flux, times[0], color=0, thick=3
+			outplot, timsec, flux, times[0], color=cols[i], thick=2
 		endelse	
 		print, freq[i]
 	endfor
 
-
+	legend, ['PHOENIX 408 MHz', '1480 MHz', '2620 MHz', '3400 MHz'], $
+		colors = [4, 5, 6, 8], $
+		linestyle = [0, 0, 0, 0], $
+		box=0, $
+		/top, /right
 
 	if keyword_set(postscript) then device, /close
 	set_plot,'x'
