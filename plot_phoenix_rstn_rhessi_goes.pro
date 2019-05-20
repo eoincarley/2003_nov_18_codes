@@ -36,6 +36,7 @@ pro oplot_rstn, t0, t1, position=position
 		xtickformat='(A1)', $
 		ytickformat='(A1)', $
 		xtitle = ' ', $
+		linestyle = 5, $
 		/xs, /ys, $
 		color = 5, $
 		timerange = [t0, t1], $
@@ -51,12 +52,12 @@ pro oplot_rstn, t0, t1, position=position
 
 END
 
-pro oplot_rhessi, t0, t1, position=position
+pro oplot_rhessi, t0, t1, position=position, rtimes=rtimes, rlfux=rflux
 
 	restore, '~/Data/2003_nov_18/RHESSI/rhessi_20011118.sav'
-	data_0 = smooth(data_0, 10)
-	data_1 = smooth(data_1, 10)
-	data_2 = smooth(data_2, 10)
+	data_0 = smooth(data_0, 5)
+	data_1 = smooth(data_1, 5)
+	data_2 = smooth(data_2, 5)
 	t0_rhessi = anytim(t0, /atimes)
 	t1_rhessi = anytim(t1, /atimes)
 
@@ -71,7 +72,7 @@ pro oplot_rhessi, t0, t1, position=position
 			/ys, $
 			/ylog, $
 			timerange = anytim([t0, t1], /utim), $
-			yr = [20, 2e3], $
+			yr = [10, 2e3], $
 			xtitle='Time (UT)', $
 			ytitle='Count Rate (s!U-1!N detector!U-1!N)', $
 			color=0, $
@@ -84,9 +85,56 @@ pro oplot_rhessi, t0, t1, position=position
 	outplot, timsec, data_1, times_rate[0], color=8, thick=5
 	outplot, timsec, data_2, times_rate[0], color=4, thick=5
 
-	legend, ['RHESSI 6-12 keV', 'RHESSI 12-25 keV', 'RHESSI 25-50 keV'], $
-		color = [10, 8, 4], $
-		linestyle = intarr(3), $
+	goes_obj = ogoes()
+	goes_obj->set, tstart=anytim(t0, /yoh) , tend=anytim(t1, /yoh)
+	low = goes_obj->getdata(/low) 
+	times = goes_obj->getdata(/times)
+	
+	;-------------------------;
+	;		Oplot GOES
+	;
+	utplot, times, low/max(low), t1, color=3, thick=1, $
+		pos = position, $
+		xtickformat = '(A1)', $
+		ytickformat = '(A1)', $
+		yr=[0.1, 1.02], $
+		yticklen = -1e-5, $
+		xtitle = ' ', $
+		/noerase
+
+	;-------------------------;
+	;		Oplot RSTN
+	;
+	output_path = '~/Data/2003_nov_18/RSTN/'
+	file = output_path+'RSTN_flux_time_20031118.sav'
+	restore, file
+	times = rstn_struct.times
+	timsec = times - times[0]
+	xrange = [t0, t1]
+	yrange = [1e1, 1e5]
+	flux_1415 = rstn_struct.flux_1415
+
+	nflux = flux_1415/max(flux_1415) -0.005
+	set_line_color
+	utplot, timsec, nflux, times[0], $
+		color = 5, $
+		pos = position, $
+		linestyle = 5, $
+		xtickformat = '(A1)', $
+		ytickformat = '(A1)', $
+		yr = [0.001, 1.1], $
+		yticklen = -1e-5, $
+		xtitle = ' ', $
+		timerange = [t0, t1], $
+		/noerase, $
+		/ylog
+
+	;-------------------------;
+	;		Legend
+	;
+	legend, ['RHESSI 6-12 keV', 'RHESSI 12-25 keV', 'RHESSI 25-50 keV', 'GOES 0.1-0.8 nm', 'RSTN 1.4 GHz'], $
+		color = [10, 8, 4, 3, 5], $
+		linestyle = [0,0,0,0,5], $
 		box=0, $
 		charsize=1.0, $
 		textcolors = 0, $
@@ -98,7 +146,7 @@ pro oplot_rhessi, t0, t1, position=position
 
 end
 
-pro plot_goes, t1, t2, plt_pos=plt_pos
+pro plot_goes, t1, t2, plt_pos=plt_pos, times=times, low=low
 
 	goes_obj = ogoes()
 	goes_obj->set, tstart=anytim(t1, /yoh) , tend=anytim(t2, /yoh)
@@ -131,8 +179,8 @@ pro plot_goes, t1, t2, plt_pos=plt_pos
 			
 	outplot, times, high, t1, color=5, thick=3
 
-	t0_rhessi = '2003-11-18T08:05'
-	t1_rhessi = '2003-11-18T08:35'
+	t0_rhessi = '2003-11-18T08:00'
+	t1_rhessi = '2003-11-18T08:50'
 	tvert0 = anytim([t0_rhessi, t0_rhessi], /utim) -  t1
 	tvert1 = anytim([t1_rhessi, t1_rhessi], /utim) -  t1
 	outplot, tvert0, yrange, t1, thick=3
@@ -198,7 +246,7 @@ pro plot_phoenix_rstn_rhessi_goes, postscript=postscript
 
 	legend, ['RSTN San-Vito 1.4 GHz'], $
 		color = [5], $
-		linestyle = 0, $
+		linestyle = 5, $
 		box=0, $
 		charsize=1.0, $
 		textcolors = 1, $
@@ -207,8 +255,8 @@ pro plot_phoenix_rstn_rhessi_goes, postscript=postscript
 		thick=3				
 
 	loadct, 0
-	t0_rhessi = '2003-11-18T08:05'
-	t1_rhessi = '2003-11-18T08:35'
+	t0_rhessi = '2003-11-18T08:00'
+	t1_rhessi = '2003-11-18T08:50'
 	tvert0 = anytim([t0_rhessi, t0_rhessi]) 
 	tvert1 = anytim([t1_rhessi, t1_rhessi])
 	outplot, tvert0, yrange, thick=3, color=150
@@ -226,7 +274,7 @@ pro plot_phoenix_rstn_rhessi_goes, postscript=postscript
 	;			Plot GOES
 	;
 	position = [0.12, 0.37, 0.82, 0.56]
-	plot_goes, t0, t1, plt_pos = position
+	plot_goes, t0, t1, plt_pos = position, times=gtimes, low=gflux
 
 
 	;----------------------------------------;
@@ -234,8 +282,8 @@ pro plot_phoenix_rstn_rhessi_goes, postscript=postscript
 	;			Over plot RHESSI
 	;
 	position = [0.12, 0.1, 0.82, 0.32]
-	t0=anytim('2003-11-18T08:05:00', /utim)
-	t1=anytim('2003-11-18T08:35:00', /utim)
+	t0=anytim(t0_rhessi, /utim)
+	t1=anytim(t1_rhessi, /utim)
 	oplot_rhessi, t0, t1, position = position
 
 	xyouts, 0.735, 0.89, 'PHOENIX', /normal, color=1
